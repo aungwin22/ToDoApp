@@ -1,25 +1,42 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 
 namespace ToDoApp.Services
 {
-    public class OpenWeatherService
+    public class OpenWeatherService : IOpenWeatherService
     {
-        private readonly string _apiKey = "d3e66c6e3cc3ecf0d055bb6b57b6e754"; // Replace with your OpenWeather API key
-        
+        private readonly string _apiKey = "abd7ab7a160c883243c1d8219900c657"; // Replace with your actual API key
 
-        public async Task<string> GetWeatherAsync(string location)
+        public async Task<string> GetWeatherAsync(string cityName)
         {
-            using (var httpClient = new HttpClient())
+            using var client = new HttpClient();
+            var response = await client.GetAsync($"https://api.openweathermap.org/data/2.5/weather?q={cityName}&appid={_apiKey}&units=metric");
+
+            if (response.IsSuccessStatusCode)
             {
-                var response = await httpClient.GetStringAsync($"https://api.openweathermap.org/data/2.5/weather?q={location}&appid={_apiKey}");
-                var weatherData = JObject.Parse(response);
-                var weatherDescription = weatherData["weather"][0]["description"].ToString();
-                var temperature = weatherData["main"]["temp"].ToString();
-                return $"Weather: {weatherDescription}, Temp: {temperature}K";
+                var weatherData = await response.Content.ReadAsStringAsync();
+                return ParseWeatherData(weatherData);
             }
+            else
+            {
+                return $"Unable to retrieve weather data for {cityName}. Error: {response.ReasonPhrase}";
+            }
+        }
+
+        private string ParseWeatherData(string weatherData)
+        {
+            var json = JObject.Parse(weatherData);
+            var description = json["weather"]?[0]?["description"]?.ToString();
+            var windSpeed = json["wind"]?["speed"]?.ToString();
+            var city = json["name"]?.ToString();
+
+            if (description == null || windSpeed == null || city == null)
+            {
+                return "Incomplete weather data received.";
+            }
+
+            return $"Description: {description}, Wind Speed: {windSpeed} m/s, City: {city}";
         }
     }
 }

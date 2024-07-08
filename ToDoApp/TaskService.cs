@@ -52,17 +52,7 @@ namespace ToDoApp.Services
 
                 Console.Write("Enter city name for weather information (if your city name is not listed, weather information may not show correctly): ");
                 var cityName = Console.ReadLine();
-                string weatherInfo = null;
-
-                try
-                {
-                    weatherInfo = await _weatherService.GetWeatherAsync(cityName);
-                }
-                catch (HttpRequestException httpEx)
-                {
-                    Console.WriteLine($"Failed to fetch weather information: {httpEx.Message}");
-                    _errorLogger.LogError("Failed to fetch weather information", httpEx);
-                }
+                string weatherInfo = await _weatherService.GetWeatherAsync(cityName);
 
                 var task = new ToDoTask
                 {
@@ -92,6 +82,8 @@ namespace ToDoApp.Services
                 _errorLogger.LogError("Unexpected error adding task", ex);
             }
         }
+
+
 
         public void ViewTasks()
         {

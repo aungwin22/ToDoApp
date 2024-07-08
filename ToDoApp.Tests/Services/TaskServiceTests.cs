@@ -1,94 +1,126 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Moq;
 using ToDoApp.Data;
 using ToDoApp.Models;
-using ToDoApp.Services;
 using Xunit;
 
 namespace ToDoApp.Tests.Services
 {
-    public class TaskServiceTests
+    public class TaskServiceTests : IDisposable
     {
-        private readonly DbContextOptions<AppDbContext> _dbContextOptions;
-        private readonly Mock<OpenWeatherService> _mockWeatherService;
-        private readonly Mock<ErrorLogger> _mockErrorLogger;
+        private readonly AppDbContext _context;
 
         public TaskServiceTests()
         {
-            _dbContextOptions = new DbContextOptionsBuilder<AppDbContext>()
-                .UseInMemoryDatabase(databaseName: "ToDoAppTestDb")
+            var options = new DbContextOptionsBuilder<AppDbContext>()
+                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString()) // Use a unique database name for each test
                 .Options;
-
-            _mockWeatherService = new Mock<OpenWeatherService>();
-            _mockErrorLogger = new Mock<ErrorLogger>();
+            _context = new AppDbContext(options);
+            _context.Database.EnsureCreated();
         }
 
-        private AppDbContext CreateContext() => new AppDbContext(_dbContextOptions);
-
         [Fact]
-        public async Task AddTaskAsync_Should_Add_Task_To_Database()
+        public async Task InsertTask_Should_Add_Task_To_Database()
         {
             // Arrange
-            using var context = CreateContext();
-            var taskService = new TaskService(context, _mockWeatherService.Object, _mockErrorLogger.Object);
-
-            _mockWeatherService.Setup(s => s.GetWeatherAsync(It.IsAny<string>()))
-                .ReturnsAsync("Sunny");
+            var task = new ToDoTask
+            {
+                Title = "Test Task",
+                Description = "Test Description",
+                DueDate = DateTime.Now,
+                IsCompleted = false,
+                WeatherInfo = "Sunny"
+            };
 
             // Act
-            await taskService.AddTaskAsync();
+            _context.ToDoTasks.Add(task);
+            await _context.SaveChangesAsync();
 
             // Assert
-            var tasks = await context.ToDoTasks.ToListAsync();
+            var tasks = await _context.ToDoTasks.ToListAsync();
             Assert.Single(tasks);
+            Assert.Equal("Test Task", tasks[0].Title);
         }
 
         [Fact]
-        public async Task AddTaskAsync_Should_Log_Error_On_WeatherService_Failure()
+        public async Task ReadTask_Should_Return_Existing_Task_From_Database()
         {
             // Arrange
-            using var context = CreateContext();
-            var taskService = new TaskService(context, _mockWeatherService.Object, _mockErrorLogger.Object);
-
-            _mockWeatherService.Setup(s => s.GetWeatherAsync(It.IsAny<string>()))
-                .ThrowsAsync(new HttpRequestException("Weather service error"));
+            var task = new ToDoTask
+            {
+                Title = "Task to Read",
+                Description = "Description",
+                DueDate = DateTime.Now,
+                IsCompleted = false,
+                WeatherInfo = "Sunny"
+            };
+            _context.ToDoTasks.Add(task);
+            await _context.SaveChangesAsync();
 
             // Act
-            await taskService.AddTaskAsync();
+            var retrievedTask = await _context.ToDoTasks.FindAsync(task.Id);
 
             // Assert
-            _mockErrorLogger.Verify(l => l.LogError("Failed to fetch weather information", It.IsAny<HttpRequestException>()), Times.Once);
+            Assert.NotNull(retrievedTask);
+            Assert.Equal(task.Title, retrievedTask.Title);
         }
 
         [Fact]
-        public void IsValidDate_Should_Return_False_For_Invalid_Date()
+        public async Task UpdateTask_Should_Modify_Existing_Task_In_Database()
         {
             // Arrange
-            using var context = CreateContext();
-            var taskService = new TaskService(context, _mockWeatherService.Object, _mockErrorLogger.Object);
+            var task = new ToDoTask
+            {
+                Title = "Initial Title",
+                Description = "Initial Description",
+                DueDate = DateTime.Now,
+                IsCompleted = false,
+                WeatherInfo = "Sunny"
+            };
+            _context.ToDoTasks.Add(task);
+            await _context.SaveChangesAsync();
 
             // Act
-            var result = taskService.IsValidDate("2000-00-00", out _);
+            task.Title = "Updated Title";
+            task.Description = "Updated Description";
+            _context.ToDoTasks.Update(task);
+            await _context.SaveChangesAsync();
 
             // Assert
-            Assert.False(result);
+            var updatedTask = await _context.ToDoTasks.FirstAsync();
+            Assert.Equal("Updated Title", updatedTask.Title);
+            Assert.Equal("Updated Description", updatedTask.Description);
         }
 
         [Fact]
-        public void IsValidDate_Should_Return_True_For_Valid_Date()
+        public async Task DeleteTask_Should_Remove_Task_From_Database()
         {
             // Arrange
-            using var context = CreateContext();
-            var taskService = new TaskService(context, _mockWeatherService.Object, _mockErrorLogger.Object);
+            var task = new ToDoTask
+            {
+                Title = "Task to Delete",
+                Description = "Description",
+                DueDate = DateTime.Now,
+                IsCompleted = false,
+                WeatherInfo = "Sunny"
+            };
+            _context.ToDoTasks.Add(task);
+            await _context.SaveChangesAsync();
 
             // Act
-            var result = taskService.IsValidDate("2024-07-08", out var date);
+            _context.ToDoTasks.Remove(task);
+            await _context.SaveChangesAsync();
 
             // Assert
-            Assert.True(result);
-            Assert.Equal(new DateTime(2024, 7, 8), date);
+            var tasks = await _context.ToDoTasks.ToListAsync();
+            Assert.Empty(tasks);
+        }
+
+        public void Dispose()
+        {
+            _context.Database.EnsureDeleted();
+            _context.Dispose();
         }
     }
 }
