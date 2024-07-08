@@ -6,12 +6,20 @@ namespace ToDoApp.Services
 {
     public class OpenWeatherService : IOpenWeatherService
     {
-        private readonly string _apiKey = "abd7ab7a160c883243c1d8219900c657"; // Replace with your actual API key
+        private readonly string _apiKey;
+        private readonly string _baseUrl;
+        private readonly HttpClient _httpClient;
+
+        public OpenWeatherService(string apiKey, string baseUrl, HttpClient httpClient)
+        {
+            _apiKey = apiKey;
+            _baseUrl = baseUrl;
+            _httpClient = httpClient;
+        }
 
         public async Task<string> GetWeatherAsync(string cityName)
         {
-            using var client = new HttpClient();
-            var response = await client.GetAsync($"https://api.openweathermap.org/data/2.5/weather?q={cityName}&appid={_apiKey}&units=metric");
+            var response = await _httpClient.GetAsync($"{_baseUrl}weather?q={cityName}&appid={_apiKey}&units=metric");
 
             if (response.IsSuccessStatusCode)
             {

@@ -9,6 +9,7 @@ namespace ToDoApp.Models
         public string Description { get; set; }
         public DateTime DueDate { get; set; }
         public bool IsCompleted { get; set; }
-        public string WeatherInfo { get; set; } // New column for weather information
+        public string WeatherInfo { get; set; }
+        public string City { get; set; } // Added City property
     }
 }

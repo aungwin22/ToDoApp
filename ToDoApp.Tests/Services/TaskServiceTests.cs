@@ -30,7 +30,8 @@ namespace ToDoApp.Tests.Services
                 Description = "Test Description",
                 DueDate = DateTime.Now,
                 IsCompleted = false,
-                WeatherInfo = "Sunny"
+                WeatherInfo = "Sunny",
+                City = "Melbourne"
             };
 
             // Act
@@ -53,7 +54,8 @@ namespace ToDoApp.Tests.Services
                 Description = "Description",
                 DueDate = DateTime.Now,
                 IsCompleted = false,
-                WeatherInfo = "Sunny"
+                WeatherInfo = "Sunny",
+                City = "Melbourne"
             };
             _context.ToDoTasks.Add(task);
             await _context.SaveChangesAsync();
@@ -76,7 +78,8 @@ namespace ToDoApp.Tests.Services
                 Description = "Initial Description",
                 DueDate = DateTime.Now,
                 IsCompleted = false,
-                WeatherInfo = "Sunny"
+                WeatherInfo = "Sunny",
+                City = "Melbourne"
             };
             _context.ToDoTasks.Add(task);
             await _context.SaveChangesAsync();
@@ -103,7 +106,8 @@ namespace ToDoApp.Tests.Services
                 Description = "Description",
                 DueDate = DateTime.Now,
                 IsCompleted = false,
-                WeatherInfo = "Sunny"
+                WeatherInfo = "Sunny",
+                City = "Melbourne"
             };
             _context.ToDoTasks.Add(task);
             await _context.SaveChangesAsync();
